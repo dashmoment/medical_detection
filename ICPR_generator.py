@@ -11,27 +11,26 @@ label_files = sorted(os.listdir(label_path))
 
 # print(raw_img_files)
 # print(label_files)
-path_size = [480, 480]
-step_size = [240, 240]
+path_size = [96, 96]
+step_size = [16, 16]
+
 
 for idx, _  in enumerate(raw_img_files):
     
-   
+    fid = 0
     name_prefix = raw_img_files[idx].split('.')[0]
     raw = misc.imread(os.path.join(raw_img_path, raw_img_files[idx]))
-   
     label = misc.imread(os.path.join(label_path, label_files[idx]))
     raw_shape = raw.shape
-    fid = 0
-
+    
     for xx in range(0, raw_shape[0] - path_size[0], step_size[0]):
         
         x_start = xx
-        x_end = xx + step_size[0]
+        x_end = xx + path_size[0]
         for yy in range(0, raw_shape[1] - path_size[1], step_size[1]):
 
             y_start  = yy
-            y_end = yy +  step_size[1]
+            y_end = yy +  path_size[1]
             img_patch = raw[x_start:x_end, y_start:y_end,:]
             label_patch = label[x_start:x_end, y_start:y_end]
             islabeled = True if np.mean(np.mean(label_patch)) else False
