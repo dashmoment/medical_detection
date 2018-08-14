@@ -9,7 +9,7 @@ __pycache__/
 #customized
 samples/
 dataset/
-
+logs/
 # Distribution / packaging
 .Python
 build/

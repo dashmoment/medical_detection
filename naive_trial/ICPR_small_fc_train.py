@@ -11,7 +11,7 @@ import keras
 
 def build_model_fc(input_shape = (16, 16, 1)):
     
-    regularizers_weight = 0.0001
+    regularizers_weight = 0.001
     
     model = Sequential()
     model.add(Convolution2D(
