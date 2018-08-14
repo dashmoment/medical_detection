@@ -3,11 +3,13 @@ import numpy as np
 import pickle
 import os
 import random as rnd
-from keras.layers import Dense, Activation, Convolution2D, MaxPooling2D, Flatten
+from keras.layers import Dense, Activation, Convolution2D, MaxPooling2D, Flatten, Dropout
 from keras.models import Sequential
 from keras import regularizers
+from keras import backend as K
 import keras
 from sklearn.utils import shuffle
+import tensorflow as tf
 
 class event_Callback(keras.callbacks.Callback):
     
@@ -24,10 +26,10 @@ class event_Callback(keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs={}):
         if epoch%20 == 0:
             model_json = model.to_json()
-            with open("../models/baseline/model.json", "w") as json_file:
+            with open("../models/focal_loss/model.json", "w") as json_file:
                 json_file.write(model_json)
             # serialize weights to HDF5
-            model.save_weights("../models/baseline/model.h5")
+            model.save_weights("../models/focal_loss/model.h5")
             print("Saved model to disk")
         return
 
@@ -38,8 +40,8 @@ class event_Callback(keras.callbacks.Callback):
         #self.losses.append(logs.get('loss'))
         return
 
-def load_model(graph_path="../models/baseline/model.json",
-                weight_path="../models/baseline/model.h5"):
+def load_model(graph_path="../models/focal_loss/model.json",
+                weight_path="../models/focal_loss/model.h5"):
     json_file = open(graph_path, 'r')
     loaded_model_json = json_file.read()
     json_file.close()
@@ -87,6 +89,7 @@ def build_model_fc(input_shape = (16, 16, 1)):
     
     model.add(MaxPooling2D())
     
+    
     model.add(Convolution2D(
         filters=32,
         kernel_size=3,
@@ -99,8 +102,11 @@ def build_model_fc(input_shape = (16, 16, 1)):
     model.add(Flatten())
     model.add(Dense(2048, activation = 'relu'))
     model.add(Dense(512, activation = 'relu'))
+    #model.add(Dropout(0.5))
     model.add(Dense(2))
-    model.add(Activation('softmax'))
+    model.add(Activation('sigmoid'))
+
+    print(model.summary())
 
     return model
 
@@ -143,19 +149,28 @@ ab_data, ab_label = data_argumentation(ab_imgPath, ab_raw_data_files, [0,1])
 n_data, n_label = data_argumentation(n_imgPath, n_raw_data_files, [1,0], countLimit=len(ab_raw_data_files), random=True)
 
 
-# def cutimized_loss(y_true, y_pred):
-#      loss_bg = keras.losses.mean_squared_error(y_true[:,:,:,0], y_pred[:,:,:,0])
-#      loss_gt = keras.losses.mean_squared_error(y_true[:,:,:,1], y_pred[:,:,:,1])
-#      loss = 0.001*loss_bg + loss_gt
+def focal_loss(alpha=0.25, gamma=2.0):
+    
+    def _focal(y_true, y_pred):
+        
+        alpha_factor = tf.ones_like(y_true) * alpha
+        alpha_factor = tf.where(K.equal(y_true, 1), alpha_factor, 1 - alpha_factor)
+        focal_weight = tf.where(K.equal(y_true, 1), 1 - y_pred, y_pred)
+        focal_weight = focal_weight ** gamma
+        cls_loss = focal_weight * K.binary_crossentropy(y_true, y_pred)
+        print(focal_weight.shape)
+        print(cls_loss.shape)
      
-#      return loss
+        return tf.reduce_mean(cls_loss)
+    return _focal
+
 procssed_data = np.array(ab_data + n_data)
 procssed_label = np.array(ab_label + n_label)
 procssed_data, procssed_label = shuffle(procssed_data, procssed_label)
 
 model = build_model_fc((96,96,3))
 event_cb = event_Callback()
-model.compile(loss= 'categorical_crossentropy', optimizer='adam', metrics=['accuracy']) 
+model.compile(loss= focal_loss(), optimizer='adam', metrics=['accuracy']) 
 history = model.fit(
                     x=procssed_data, 
                     y=procssed_label, 

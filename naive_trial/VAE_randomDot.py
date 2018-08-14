@@ -287,8 +287,8 @@ if __name__ == '__main__':
         
         def vae_loss(ytrue, ypred):
             
-            reconstruction_loss = binary_crossentropy(K.flatten(ytrue), K.flatten(ypred))*32*32
-            #reconstruction_loss = K.sqrt(K.sum(K.square(ytrue - ypred), axis = [1,2,3]))
+            #reconstruction_loss = binary_crossentropy(K.flatten(ytrue), K.flatten(ypred))*32*32
+            reconstruction_loss = K.sqrt(K.sum(K.square(ytrue - ypred), axis = [1,2,3]))
             #reconstruction_loss = K.sum(K.abs(ytrue - ypred), axis = [1,2,3])
             #reconstruction_loss = -K.mean(inputs * K.log(1e-10 + outputs)
             #                                        + (1-inputs) * K.log(1e-10 + 1 - outputs), [1,2,3])    

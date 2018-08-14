@@ -10,6 +10,7 @@ __pycache__/
 samples/
 dataset/
 logs/
+models/
 # Distribution / packaging
 .Python
 build/
